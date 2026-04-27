@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Шежіре Меркіт</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0E0902;
+  --panel:    #16100A;
+  --border:   #2E1C08;
+  --border2:  #3A2810;
+  --gold:     #C89828;
+  --gold-hi:  #F0C84A;
+  --gold-dim: #7A5C16;
+  --text:     #EAD8A0;
+  --text-dim: #7A6238;
+  --female:   #C06838;
+  --wife:     #9A7868;
+  --zh:       #C88030;
+  --sa:       #4A8890;
+  --bu:       #6A9848;
+  --to:       #A84840;
+  --bar-h:    120px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%; background: var(--bg); color: var(--text);
+  font-family: 'EB Garamond', serif; overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ══ HEADER ══ */
+header {
+  display: flex; align-items: center;
+  padding: 0 20px; height: 60px;
+  background: linear-gradient(180deg, #1A1006 0%, #100C04 100%);
+  border-bottom: 1px solid var(--border2);
+  position: relative; z-index: 100;
+  gap: 12px; flex-shrink: 0;
+}
+.hdr-tamga { filter: drop-shadow(0 0 8px rgba(200,152,40,.5)); flex-shrink: 0; }
+.hdr-title { flex: 1; min-width: 0; }
+.hdr-title h1 {
+  font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: .18em;
+  color: var(--gold); text-transform: uppercase; line-height: 1.1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hdr-title p { font-size: 10px; color: var(--text-dim); letter-spacing: .06em; margin-top: 2px; }
+
+/* desktop branch filters in header */
+.hdr-filters {
+  display: flex; gap: 6px; align-items: center;
+}
+.bf-btn {
+  padding: 5px 12px; border-radius: 20px; border: 1px solid transparent;
+  font-family: 'EB Garamond', serif; font-size: 12px; cursor: pointer;
+  transition: all .2s; background: transparent; color: var(--text-dim);
+  white-space: nowrap; -webkit-tap-highlight-color: transparent;
+}
+.bf-btn:hover { border-color: currentColor; }
+
+/* ══ BODY LAYOUT ══ */
+.layout {
+  display: flex; flex-direction: column;
+  height: calc(100vh - 60px);
+}
+#tree-wrap { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+#tree-svg { width: 100%; height: 100%; cursor: grab; touch-action: none; }
+#tree-svg:active { cursor: grabbing; }
+
+/* ══ DESKTOP ZOOM CONTROLS ══ */
+.zoom-controls {
+  position: absolute; bottom: 20px; right: 20px;
+  display: flex; flex-direction: column; gap: 4px; z-index: 10;
+}
+.zc-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: #1C1208; border: 1px solid var(--border2);
+  color: var(--text-dim); font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; font-family: monospace;
+  -webkit-tap-highlight-color: transparent;
+}
+.zc-btn:hover, .zc-btn:active { background: #2A1A0A; border-color: var(--gold); color: var(--gold); }
+.zc-sep { height: 4px; }
+
+/* ══ DESKTOP LEGEND ══ */
+.legend {
+  position: absolute; bottom: 20px; left: 20px; z-index: 10;
+  background: rgba(14,9,2,.9); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 12px 16px;
+}
+.legend-title { font-size: 9px; color: var(--text-dim); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 8px; }
+.legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.legend-row:last-child { margin-bottom: 0; }
+.lc { width: 10px; height: 10px; border-radius: 50%; border: 2px solid; flex-shrink: 0; }
+.legend-row span { font-size: 11px; color: var(--text-dim); }
+.legend-shapes { display: flex; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+.ls-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-dim); }
+
+/* ══ D3 ══ */
+.link { fill: none; stroke-width: 1.5px; opacity: .5; }
+.link-zhaman   { stroke: var(--zh); }
+.link-saki     { stroke: var(--sa); }
+.link-buryt    { stroke: var(--bu); }
+.link-toktagan { stroke: var(--to); }
+.link-main     { stroke: #706858; }
+.node { cursor: pointer; }
+.node .node-shape { stroke-width: 1.8px; transition: filter .2s; }
+.node:hover .node-shape { filter: drop-shadow(0 0 5px rgba(200,152,40,.6)); }
+.node.hl .node-shape { filter: drop-shadow(0 0 9px var(--gold-hi)); stroke: var(--gold-hi) !important; stroke-width: 2.5px !important; }
+.node text {
+  font-family: 'EB Garamond', serif; font-size: 11px; fill: var(--text);
+  pointer-events: none; paint-order: stroke;
+  stroke: rgba(14,9,2,.85); stroke-width: 3px;
+}
+.node .expand { font-size: 8px; fill: var(--text-dim); pointer-events: none; }
+.node.search-dim { opacity: .15; }
+.spouse-wrap { cursor: pointer; }
+.spouse-label {
+  font-family: 'EB Garamond', serif; font-size: 10px;
+  fill: #9870B0; pointer-events: none; font-style: italic;
+  paint-order: stroke; stroke: rgba(14,9,2,.9); stroke-width: 3px;
+}
+
+/* ══ TOOLTIP ══ */
+#tooltip {
+  position: fixed; pointer-events: none; z-index: 500;
+  background: rgba(22,16,10,.96); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 7px 11px;
+  font-size: 12px; color: var(--text);
+  opacity: 0; transition: opacity .15s; max-width: 200px;
+}
+
+/* ══ MOBILE BOTTOM BAR ══ */
+.bottom-bar {
+  display: none;
+  background: #12100A;
+  border-top: 1px solid var(--border2);
+  flex-shrink: 0;
+}
+.bottom-bar-inner {
+  padding: 10px 14px 12px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+/* Zoom row */
+.mob-zoom-row {
+  display: flex; gap: 8px; justify-content: space-between;
+}
+.mzc {
+  flex: 1; height: 44px; border-radius: 10px;
+  background: #1C1208; border: 1px solid var(--border2);
+  color: var(--text-dim); font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: monospace; -webkit-tap-highlight-color: transparent;
+  transition: background .1s, color .1s;
+}
+.mzc:active { background: #2A1A0A; border-color: var(--gold); color: var(--gold); }
+.mzc-sm { font-size: 14px; }
+
+/* Branch filter row */
+.mob-branch-row {
+  display: flex; gap: 8px; overflow-x: auto;
+  scrollbar-width: none; padding-bottom: 2px;
+}
+.mob-branch-row::-webkit-scrollbar { display: none; }
+.mbb {
+  flex-shrink: 0; height: 36px; padding: 0 14px;
+  border-radius: 18px; border: 1px solid var(--border2);
+  background: #1A1208; color: var(--text-dim);
+  font-family: 'EB Garamond', serif; font-size: 13px;
+  cursor: pointer; white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color .15s, color .15s;
+}
+.mbb.active { border-color: var(--gold); color: var(--gold); }
+.mbb[data-branch="zhaman"].active { border-color: var(--zh); color: var(--zh); }
+.mbb[data-branch="saki"].active   { border-color: var(--sa); color: var(--sa); }
+.mbb[data-branch="buryt"].active  { border-color: var(--bu); color: var(--bu); }
+.mbb[data-branch="toktagan"].active { border-color: var(--to); color: var(--to); }
+
+/* ══ MOBILE: only show bottom bar, hide desktop chrome ══ */
+@media (max-width: 700px) {
+  .hdr-title p  { display: none; }
+  .hdr-filters  { display: none; }
+  .zoom-controls { display: none; }
+  .legend { display: none; }
+  .bottom-bar { display: block; }
+  header { height: 52px; padding: 0 14px; }
+  .layout { height: calc(100vh - 52px); }
+  #tree-svg { cursor: default; }
+}
+/* safe-area for notched phones */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (max-width: 700px) {
+    .bottom-bar-inner { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <svg class="hdr-tamga" width="36" height="42" viewBox="0 0 48 56" fill="none">
+    <line x1="24" y1="3"  x2="24" y2="53" stroke="#C89828" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="12" y1="11" x2="36" y2="11" stroke="#C89828" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="12" y1="11" x2="6"  y2="27" stroke="#C89828" stroke-width="2"   stroke-linecap="round"/>
+    <line x1="36" y1="11" x2="42" y2="27" stroke="#C89828" stroke-width="2"   stroke-linecap="round"/>
+    <line x1="6"  y1="27" x2="13" y2="27" stroke="#C89828" stroke-width="2"   stroke-linecap="round"/>
+    <line x1="42" y1="27" x2="35" y2="27" stroke="#C89828" stroke-width="2"   stroke-linecap="round"/>
+    <line x1="24" y1="40" x2="14" y2="53" stroke="#C89828" stroke-width="2"   stroke-linecap="round"/>
+    <line x1="24" y1="40" x2="34" y2="53" stroke="#C89828" stroke-width="2"   stroke-linecap="round"/>
+    <circle cx="24" cy="11" r="3"  fill="#C89828"/>
+    <circle cx="24" cy="40" r="2"  fill="#C89828" opacity=".6"/>
+  </svg>
+  <div class="hdr-title">
+    <h1>ШЕЖІРЕ МЕРКІТ</h1>
+    <p>Меркіт · Абақ Керей · Орта Жүз</p>
+  </div>
+  <div class="hdr-filters">
+    <button class="bf-btn active" data-branch="all"
+      style="border-color:#4A4030;color:#C89828;background:rgba(200,152,40,.1)">Барлығы</button>
+    <button class="bf-btn" data-branch="zhaman" style="color:var(--zh)">● Жаман</button>
+    <button class="bf-btn" data-branch="saki"   style="color:var(--sa)">● Сәкі</button>
+    <button class="bf-btn" data-branch="buryt"  style="color:var(--bu)">● Бүріт</button>
+    <button class="bf-btn" data-branch="toktagan" style="color:var(--to)">● Тоқтаған</button>
+  </div>
+</header>
+
+<div class="layout">
+  <div id="tree-wrap">
+    <svg id="tree-svg"></svg>
+
+    <!-- Desktop zoom -->
+    <div class="zoom-controls">
+      <button class="zc-btn" id="zc-in">+</button>
+      <button class="zc-btn" id="zc-out">−</button>
+      <div class="zc-sep"></div>
+      <button class="zc-btn" id="zc-fit" style="font-size:11px">⤢</button>
+      <button class="zc-btn" id="zc-home" style="font-size:12px">⌂</button>
+    </div>
+
+    <!-- Desktop legend -->
+    <div class="legend">
+      <div class="legend-title">Тармақтар</div>
+      <div class="legend-row"><div class="lc" style="border-color:var(--zh);background:rgba(200,128,48,.2)"></div><span>Жаман</span></div>
+      <div class="legend-row"><div class="lc" style="border-color:var(--sa);background:rgba(74,136,144,.2)"></div><span>Сәкі</span></div>
+      <div class="legend-row"><div class="lc" style="border-color:var(--bu);background:rgba(106,152,72,.2)"></div><span>Бүріт</span></div>
+      <div class="legend-row"><div class="lc" style="border-color:var(--to);background:rgba(168,72,64,.2)"></div><span>Тоқтаған</span></div>
+      <div class="legend-shapes">
+        <div class="ls-item"><svg width="12" height="12"><rect x="1" y="1" width="10" height="10" rx="2" fill="rgba(200,128,48,.3)" stroke="#C88030" stroke-width="1.5"/></svg> Ер</div>
+        <div class="ls-item"><svg width="12" height="12"><rect x="1" y="1" width="10" height="10" rx="2" fill="rgba(192,104,56,.25)" stroke="#C06838" stroke-width="1.5" transform="rotate(45,6,6)"/></svg> Әйел</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile bottom bar -->
+  <div class="bottom-bar">
+    <div class="bottom-bar-inner">
+      <div class="mob-zoom-row">
+        <button class="mzc" id="mzc-in">+</button>
+        <button class="mzc" id="mzc-out">−</button>
+        <button class="mzc mzc-sm" id="mzc-fit">⤢ Бәрі</button>
+        <button class="mzc mzc-sm" id="mzc-home">⌂</button>
+      </div>
+      <div class="mob-branch-row">
+        <button class="mbb active" data-branch="all">Барлығы</button>
+        <button class="mbb" data-branch="zhaman">● Жаман</button>
+        <button class="mbb" data-branch="saki">● Сәкі</button>
+        <button class="mbb" data-branch="buryt">● Бүріт</button>
+        <button class="mbb" data-branch="toktagan">● Тоқтаған</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+// ══════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════
+const DATA = {
+id:"shagyr",name:"Шағыр",g:"m",
+children:[{id:"zhaiyn",name:"Жайын",g:"m",
+children:[{id:"altan",name:"Алтан",g:"m",
+children:[{id:"zhansary",name:"Жансары",g:"m",
+children:[{id:"kudas",name:"Құдас",g:"m",
+children:[
+
+{id:"zhaman",name:"Жаман",g:"m",branch:"zhaman",
+children:[{id:"abde",name:"Әбде",g:"m",branch:"zhaman",
+children:[
+  {id:"yskakbay",name:"Ысқақбай",g:"m",branch:"zhaman",
+  children:[
+    {id:"kaysha_zh",name:"Қайша",g:"f",branch:"zhaman"},
+    {id:"nurgaysha_zh",name:"Нұрғайша",g:"f",branch:"zhaman"},
+    {id:"akan_zh",name:"Ақан",g:"m",branch:"zhaman",spouse:"Бижамал Қаптоллақызы",spouseInfo:"Жүзі: Қарақас",
+    children:[
+      {id:"azat_zh",name:"Азат",g:"m",branch:"zhaman",spouse:"Ләззат",
+      children:[
+        {id:"kuanyshkan_zh",name:"Қуанышқан",g:"m",branch:"zhaman"},
+        {id:"bekzat_zh",name:"Бекзат",g:"m",branch:"zhaman",spouse:"Гүнай",spouseInfo:"Жүзі: Найман",
+        children:[
+          {id:"aibol_zh",name:"Айбол",g:"m",branch:"zhaman"},
+          {id:"ayakoz_zh",name:"Аякөз",g:"f",branch:"zhaman"}
+        ]},
+        {id:"zhenisgyul_zh",name:"Жеңісгүл",g:"f",branch:"zhaman"},
+        {id:"nurgyul_zh",name:"Нұргүл",g:"f",branch:"zhaman"}
+      ]},
+      {id:"gyulden_zh",name:"Гүлден",g:"f",branch:"zhaman"}
+    ]},
+    {id:"nurila_zh",name:"Нұрила",g:"f",branch:"zhaman"}
+  ]},
+  {id:"yskakan_zh",name:"Ысқақан",g:"m",branch:"zhaman"},
+  {id:"sagaday_zh",name:"Сағадай",g:"m",branch:"zhaman"},
+  {id:"gyulay_zh",name:"Гүләй",g:"f",branch:"zhaman"},
+  {id:"gyulshay_zh",name:"Гүлшай",g:"f",branch:"zhaman"},
+  {id:"kydyrma_zh",name:"Қыдырма",g:"m",branch:"zhaman",spouse:"Қадиша",spouseInfo:"Жүзі: Сибаң",
+  children:[
+    {id:"kyzyrbek_zh",name:"Қызырбек",g:"m",branch:"zhaman",spouse:"Нұрғиса",spouseInfo:"Жүзі: Жастабан",
+    children:[
+      {id:"zhumabek_zh",name:"Жұмабек",g:"m",branch:"zhaman",spouse:"Алмагүл",spouseInfo:"Жүзі: Уақ",
+      children:[
+        {id:"nurgalym_zh",name:"Нұрғалым",g:"m",branch:"zhaman"},
+        {id:"nurerke_zh",name:"Нұрерке",g:"m",branch:"zhaman"}
+      ]},
+      {id:"tursyngyul_zh",name:"Тұрсынгүл",g:"f",branch:"zhaman"},
+      {id:"mukametbek_zh",name:"Мұқаметбек",g:"m",branch:"zhaman",spouse:"Айгүл"}
+    ]},
+    {id:"ainur_zh",name:"Айнұр",g:"f",branch:"zhaman"}
+  ]},
+  {id:"kyrgyzbaiy_zh",name:"Қырғызбай",g:"m",branch:"zhaman",spouse:"Нұрайша",spouseInfo:"Жүзі: Ақсары",
+  children:[
+    {id:"kanyshai_zh",name:"Қанышай",g:"f",branch:"zhaman"},
+    {id:"baktykhan_zh",name:"Бақытхан",g:"m",branch:"zhaman"},
+    {id:"kulashkhan_zh",name:"Күләшхан",g:"f",branch:"zhaman"},
+    {id:"seyitbek_zh",name:"Сейітбек",g:"m",branch:"zhaman"},
+    {id:"nurlanbek_zh",name:"Нұрланбек",g:"m",branch:"zhaman"},
+    {id:"serikbek_zh",name:"Серікбек",g:"m",branch:"zhaman"},
+    {id:"kadyrbek_zh",name:"Кәдірбек",g:"m",branch:"zhaman"},
+    {id:"zhenysbek_zh",name:"Жеңісбек",g:"m",branch:"zhaman",spouse:"Нұргүл",spouseInfo:"Жүзі: Дөртуыл",
+    children:[
+      {id:"akzhol_zh",name:"Ақжол",g:"m",branch:"zhaman",spouse:"Сағынай",spouseInfo:"Жүзі: Жарболды",
+      children:[{id:"aiym_zh",name:"Айым",g:"f",branch:"zhaman"}]},
+      {id:"aknar_zh",name:"Ақнар",g:"f",branch:"zhaman"}
+    ]}
+  ]},
+  {id:"baykali_zh",name:"Байқали",g:"m",branch:"zhaman"}
+]}]},
+
+{id:"saki",name:"Сәкі",g:"m",branch:"saki",
+children:[
+  {id:"abisbay_s",name:"Әбішбай",g:"m",branch:"saki",
+  children:[
+    {id:"kalkajan_s",name:"Қалқажан",g:"m",branch:"saki",spouse:"Қайшан Бекболсынқызы",
+    children:[
+      {id:"kaliaksan_s",name:"Қалиқасан",g:"m",branch:"saki",spouse:"Нүкен Ескендірқызы",spouseInfo:"Жүзі: Елкелді",
+      children:[
+        {id:"riza_s",name:"Риза",g:"m",branch:"saki"},
+        {id:"serik_s",name:"Серік",g:"m",branch:"saki",spouse:"Жаңылқан Байахметқызы",spouseInfo:"Жүзі: Тәттібай",
+        children:[{id:"aizhan_s",name:"Айжан",g:"f",branch:"saki"}]},
+        {id:"aden_s",name:"Әден",g:"m",branch:"saki"}
+      ]},
+      {id:"farida_s",name:"Фәрида",g:"f",branch:"saki"}
+    ]},
+    {id:"shaymurat_s",name:"Шаймұрат",g:"m",branch:"saki",spouse:"Мәлике Жуанханқызы",spouseInfo:"Жүзі: Тәттібай",
+    children:[
+      {id:"kaliakpar_s",name:"Қалиақпар",g:"m",branch:"saki",spouse:"Қанша Науанқызы",spouseInfo:"Жүзі: Елгелді",
+      children:[
+        {id:"mellat_s",name:"Меллат",g:"m",branch:"saki",spouse:"Нұрбақыт Нәкенқызы",spouseInfo:"Жүзі: Елгелді",
+        children:[
+          {id:"ernar_s",name:"Ернар",g:"m",branch:"saki"},
+          {id:"akerke_s",name:"Ақерке",g:"f",branch:"saki"}
+        ]},
+        {id:"azat_s",name:"Азат",g:"m",branch:"saki",spouse:"Гүлия Исабайқызы",spouseInfo:"Жүзі: Қарақас",
+        children:[
+          {id:"balghyn_s",name:"Балғын",g:"f",branch:"saki"},
+          {id:"bulgyn_s",name:"Бұлғын",g:"f",branch:"saki"}
+        ]},
+        {id:"zhenis_s",name:"Жеңіс",g:"m",branch:"saki",spouse:"Алтын Құсманқызы",spouseInfo:"Жүзі: Қарақас"},
+        {id:"bakyt_s",name:"Бақыт",g:"m",branch:"saki",spouse:"Сайра Сұмағұлқызы",spouseInfo:"Жүзі: Найман",
+        children:[
+          {id:"baldan_s",name:"Балдан",g:"m",branch:"saki"},
+          {id:"bagzhan_s",name:"Бағжан",g:"f",branch:"saki"}
+        ]},
+        {id:"bolat_s",name:"Болат",g:"m",branch:"saki",spouse:"Сәуле Сұмағұлқызы",spouseInfo:"Жүзі: Найман",
+        children:[{id:"eldos_s",name:"Елдос",g:"m",branch:"saki"}]},
+        {id:"mukiat_s",name:"Мұқиат",g:"m",branch:"saki",spouse:"Жібек Оразқызы",spouseInfo:"Жүзі: Жайлау",
+        children:[{id:"zhandos_s",name:"Жандос",g:"m",branch:"saki"}]},
+        {id:"zhanar_s",name:"Жанар",g:"f",branch:"saki"}
+      ]},
+      {id:"kalikazy_s",name:"Қалиқазы",g:"m",branch:"saki",spouse:"Гүлжәмі Қалиақсарқызы",spouseInfo:"Жүзі: Шұбарайғыр",
+      children:[
+        {id:"tursynkhan_s",name:"Тұрсынхан",g:"m",branch:"saki",spouse:"Арман Мәуенқызы",spouseInfo:"Жүзі: Қазыбек",
+        children:[
+          {id:"zhansaya_s",name:"Жансая",g:"f",branch:"saki"},
+          {id:"zhaseri_s",name:"Жансері",g:"m",branch:"saki"}
+        ]},
+        {id:"muratkhan_s",name:"Мұратхан",g:"m",branch:"saki",spouse:"Зейнелхан Ырысбекызы",spouseInfo:"Жүзі: Сибаң",
+        children:[
+          {id:"aidana_s",name:"Айдана",g:"f",branch:"saki"},
+          {id:"aidos_s",name:"Айдос",g:"m",branch:"saki"}
+        ]},
+        {id:"nurzat_s",name:"Нұрзат",g:"f",branch:"saki"},
+        {id:"nurbati_s",name:"Нұрбәти",g:"f",branch:"saki"},
+        {id:"izat_s",name:"Изат",g:"f",branch:"saki"},
+        {id:"umithan_s",name:"Үмітхан",g:"f",branch:"saki"},
+        {id:"gylsinkhan_s",name:"Гүлсінхан",g:"f",branch:"saki"}
+      ]},
+      {id:"kalikaydar_s",name:"Қалиқайдар",g:"m",branch:"saki",spouse:"Азат Қызырханқызы",spouseInfo:"Жүзі: Найман",
+      children:[
+        {id:"daulethan_s",name:"Дәулетхан",g:"m",branch:"saki",spouse:"Бахытхан Қыдырқызы",spouseInfo:"Жүзі: Тәттібай",
+        children:[
+          {id:"ertay_s",name:"Ертай",g:"m",branch:"saki"},
+          {id:"nartay_s",name:"Нартай",g:"m",branch:"saki"}
+        ]},
+        {id:"nurila_s",name:"Нұрила",g:"f",branch:"saki"},
+        {id:"nurlankhan_s",name:"Нұрланхан",g:"m",branch:"saki",spouse:"Жазира",
+        children:[
+          {id:"ilina_s",name:"Илина",g:"f",branch:"saki"},
+          {id:"eliza_s",name:"Елиза",g:"f",branch:"saki"}
+        ]},
+        {id:"altyngyul_s",name:"Алтынгүл",g:"f",branch:"saki"},
+        {id:"nurgyul_s",name:"Нұргүл",g:"f",branch:"saki"}
+      ]},
+      {id:"shulengali_s",name:"Шүленғали",g:"m",branch:"saki",spouse:"Дәметкен Айтмұқайқызы",spouseInfo:"Жүзі: Тәттібай",
+      children:[
+        {id:"anargyul_s",name:"Анаргүл",g:"f",branch:"saki"},
+        {id:"razygyul_s",name:"Разыгүл",g:"f",branch:"saki"}
+      ]},
+      {id:"dariga_s",name:"Дәриға",g:"f",branch:"saki"},
+      {id:"badiha_s",name:"Бәдиға",g:"f",branch:"saki"},
+      {id:"zhania_s",name:"Жәния",g:"f",branch:"saki"}
+    ]},
+    {id:"shayakhmet_s",name:"Шайахмет",g:"m",branch:"saki",spouse:"Жәмилә Сүлейқанқызы",spouseInfo:"Жүзі: Түкібай",
+    children:[
+      {id:"ramazan_s",name:"Рамазан",g:"m",branch:"saki"},
+      {id:"kali_s",name:"Қали",g:"m",branch:"saki",spouse:"Айша Зүкетайқызы",spouseInfo:"Жүзі: Көнсадақ",
+      children:[
+        {id:"gylymkhan_s",name:"Ғылымхан",g:"m",branch:"saki",spouse:"Бақыт Жамалқызы",spouseInfo:"Жүзі: Арғын",
+        children:[
+          {id:"samgar_s",name:"Самғар",g:"m",branch:"saki",spouse:"Мадина Ермекқызы",spouseInfo:"Жүзі: Арғын",
+          children:[{id:"borte_s",name:"Бөрте",g:"f",branch:"saki"}]},
+          {id:"sanzhar_s",name:"Санжар",g:"m",branch:"saki"},
+          {id:"elnar_s",name:"Елнар",g:"m",branch:"saki"}
+        ]},
+        {id:"esbol_s",name:"Есбол",g:"m",branch:"saki",spouse:"Айгерім Шаханқызы",spouseInfo:"Жүзі: Қоңырат",
+        children:[
+          {id:"eraly_s",name:"Ералы",g:"m",branch:"saki"},
+          {id:"nuraly_s",name:"Нұралы",g:"m",branch:"saki"}
+        ]},
+        {id:"asipa_s",name:"Әсипа",g:"f",branch:"saki"},
+        {id:"asigyul_s",name:"Әсигүл",g:"f",branch:"saki"},
+        {id:"aitzhuldyz_s",name:"Айтжұлдыз",g:"f",branch:"saki"},
+        {id:"batigyul_s",name:"Бәтигүл",g:"f",branch:"saki"},
+        {id:"razygyul2_s",name:"Разыгүл",g:"f",branch:"saki"}
+      ]},
+      {id:"galym_s",name:"Ғалым",g:"m",branch:"saki",spouse:"Күләй Қалымханқызы",spouseInfo:"Жүзі: Сарбас",
+      children:[
+        {id:"kasen_s",name:"Қасен",g:"m",branch:"saki"},
+        {id:"gulnur_s",name:"Гүлнұр",g:"f",branch:"saki"}
+      ]},
+      {id:"kalymkhan_s",name:"Қалымхан",g:"m",branch:"saki",spouse:"Қанаша Еренбаққызы",spouseInfo:"Жүзі: Шотай",
+      children:[
+        {id:"akzhol_s",name:"Ақжол",g:"m",branch:"saki",spouse:"Қалима",
+        children:[{id:"tabys_s",name:"Табыс",g:"m",branch:"saki"}]},
+        {id:"tansaule_s",name:"Таңсәуле",g:"f",branch:"saki"}
+      ]},
+      {id:"kaliman_s",name:"Қалиман",g:"f",branch:"saki"},
+      {id:"aliman_s",name:"Әліман",g:"f",branch:"saki"},
+      {id:"batima_s",name:"Бәтима",g:"f",branch:"saki"},
+      {id:"salima_s",name:"Сәлима",g:"f",branch:"saki"},
+      {id:"kanipa_s",name:"Қанипа",g:"f",branch:"saki"},
+      {id:"anipa_s",name:"Әнипа",g:"f",branch:"saki"}
+    ]},
+    {id:"bayakhmet_s",name:"Байахмет",g:"m",branch:"saki",spouse:"Тұқыс Бекболсынқызы",spouseInfo:"Жүзі: Барқы",
+    children:[
+      {id:"adilbek_s",name:"Әділбек",g:"m",branch:"saki",spouse:"Оразхан Рақымжанқызы",spouseInfo:"Жүзі: Шұбарайғыр",
+      children:[
+        {id:"bakytbek_s",name:"Бақытбек",g:"m",branch:"saki",spouse:"Сайраш",
+        children:[
+          {id:"lina_s",name:"Лина",g:"f",branch:"saki"},
+          {id:"karakat_s",name:"Қарақат",g:"f",branch:"saki"}
+        ]},
+        {id:"beisenbek_s",name:"Бейсенбек",g:"m",branch:"saki"},
+        {id:"bakytnur_s",name:"Бақытнұр",g:"f",branch:"saki"},
+        {id:"oral_s",name:"Орал",g:"m",branch:"saki"},
+        {id:"altyn_s",name:"Алтын",g:"f",branch:"saki"}
+      ]}
+    ]}
+  ]},
+  {id:"maldybay_s",name:"Малдыбай",g:"m",branch:"saki",spouse:"Күнпейіс",spouseInfo:"Жүзі: Уақ",
+  children:[
+    {id:"baysuleimen_s",name:"Байсүлеймен",g:"m",branch:"saki",spouse:"Баян",spouseInfo:"Жүзі: Уақ",
+    children:[
+      {id:"kyzyrbek_m",name:"Қызырбек",g:"m",branch:"saki",spouse:"Бақытхан",spouseInfo:"Жүзі: Шотай",
+      children:[
+        {id:"serikbol_m",name:"Серікбол",g:"m",branch:"saki",
+        children:[
+          {id:"ayatolla_m",name:"Аятолла",g:"m",branch:"saki"},
+          {id:"sarqyt_m",name:"Сарқыт",g:"m",branch:"saki"}
+        ]},
+        {id:"berikbol_m",name:"Берікбол",g:"m",branch:"saki",spouse:"Салауат",spouseInfo:"Жүзі: Уақ",
+        children:[
+          {id:"muratolla_m",name:"Мұратолла",g:"m",branch:"saki"},
+          {id:"zylgyiza_m",name:"Зүлғиза",g:"f",branch:"saki"},
+          {id:"kauyariya_m",name:"Кәуәрия",g:"f",branch:"saki"}
+        ]},
+        {id:"erkinbol_m",name:"Еркінбол",g:"m",branch:"saki",spouse:"Нұрлаш",spouseInfo:"Жүзі: Уақ",
+        children:[
+          {id:"payzolla_m",name:"Пайзолла",g:"m",branch:"saki"},
+          {id:"aidolda_m",name:"Айдолда",g:"m",branch:"saki"},
+          {id:"kamariya_m",name:"Қамария",g:"f",branch:"saki"}
+        ]},
+        {id:"yrysaldy_m",name:"Ырысалды",g:"m",branch:"saki"},
+        {id:"ymitaldy_m",name:"Үміталды",g:"m",branch:"saki"},
+        {id:"dariga_m",name:"Дариға",g:"f",branch:"saki"},
+        {id:"mariya_m",name:"Мәрия",g:"f",branch:"saki"},
+        {id:"mauariya_m",name:"Мәуәрия",g:"f",branch:"saki"}
+      ]},
+      {id:"nurbati_m",name:"Нұрбати",g:"f",branch:"saki"},
+      {id:"gulbati_m",name:"Гүлбати",g:"f",branch:"saki"},
+      {id:"zhanylgan_m",name:"Жаңылған",g:"f",branch:"saki"},
+      {id:"nurbagi_m",name:"Нұрбағи",g:"f",branch:"saki"}
+    ]},
+    {id:"akebay_m",name:"Әкебай",g:"m",branch:"saki",spouse:"Ырымхан",spouseInfo:"Жүзі: Уақ",
+    children:[
+      {id:"kazhyken_m",name:"Қажыкен",g:"m",branch:"saki",spouse:"Ашигүл",
+      children:[
+        {id:"sauatzhan_m",name:"Сауатжан",g:"m",branch:"saki",spouse:"Нұржайна",spouseInfo:"Жүзі: Уақ",
+        children:[
+          {id:"sylamzhan_m",name:"Сыламжан",g:"m",branch:"saki"},
+          {id:"meriya_m",name:"Мерия",g:"f",branch:"saki"}
+        ]},
+        {id:"adilzhan_m",name:"Әділжан",g:"m",branch:"saki"},
+        {id:"arzygyul_m",name:"Арзыгүл",g:"f",branch:"saki"},
+        {id:"aizhan2_m",name:"Айжан",g:"f",branch:"saki"}
+      ]}
+    ]},
+    {id:"baymukamet_m",name:"Баймұқамет",g:"m",branch:"saki",spouse:"Жібек",
+    children:[
+      {id:"maksutkhan_m",name:"Мақсүтхан",g:"m",branch:"saki",spouse:"Ажай",spouseInfo:"Жүзі: Уақ",
+      children:[
+        {id:"kyzhynabi_m",name:"Қыжынәби",g:"m",branch:"saki",spouse:"Гүлнұр",spouseInfo:"Жүзі: Уақ",
+        children:[
+          {id:"kasymbekm",name:"Қасымбек",g:"m",branch:"saki"},
+          {id:"nurmizan_m",name:"Нұрмизан",g:"m",branch:"saki"}
+        ]},
+        {id:"nabikhan_m",name:"Нәбихан",g:"m",branch:"saki",spouse:"Нұршат",spouseInfo:"Жүзі: Қарақас",
+        children:[{id:"nurgiza_m",name:"Нұрғиза",g:"f",branch:"saki"}]},
+        {id:"sadykhan_m",name:"Садыхан",g:"m",branch:"saki",spouse:"Айнұр",spouseInfo:"Жүзі: Уақ",
+        children:[
+          {id:"galymbekm",name:"Ғалымбек",g:"m",branch:"saki"},
+          {id:"gyulmira_m",name:"Гүлмира",g:"f",branch:"saki"},
+          {id:"gyuldina_m",name:"Гүлдина",g:"f",branch:"saki"}
+        ]},
+        {id:"zakiman_m",name:"Зәкиман",g:"m",branch:"saki",spouse:"Гүлсана",spouseInfo:"Жүзі: Қарақас",
+        children:[
+          {id:"bakberdi_m",name:"Бақберді",g:"m",branch:"saki"},
+          {id:"gylzira_m",name:"Гүлзира",g:"f",branch:"saki"},
+          {id:"ylpara_m",name:"Ұлпара",g:"f",branch:"saki"}
+        ]},
+        {id:"nazikhan_m",name:"Нәзіхан",g:"f",branch:"saki"},
+        {id:"nuriman_m",name:"Нұриман",g:"f",branch:"saki"}
+      ]},
+      {id:"orazkhan_m",name:"Оразхан",g:"m",branch:"saki"},
+      {id:"anikhan_m",name:"Әнихан",g:"f",branch:"saki"}
+    ]}
+  ]},
+  {id:"baymukan_s",name:"Баймұқан",g:"m",branch:"saki"}
+]},
+
+{id:"buryt",name:"Бүріт",g:"m",branch:"buryt",
+children:[
+  {id:"abeke_b",name:"Әбеке",g:"m",branch:"buryt",
+  children:[
+    {id:"sadykhan_b",name:"Садыхан",g:"m",branch:"buryt",spouse:"Рабиға Әрміқызы",spouseInfo:"Жүзі: Есдәулет",
+    children:[
+      {id:"kadirkhan_b",name:"Кәдірхан",g:"m",branch:"buryt"},
+      {id:"kydyrkhan_b",name:"Қыдырхан",g:"m",branch:"buryt"},
+      {id:"mukametbay_b",name:"Мұқаметбай",g:"m",branch:"buryt",spouse:"Бижамал Марданқызы",spouseInfo:"Жүзі: Есдәулет",
+      children:[
+        {id:"aiymkhan_b",name:"Айымхан",g:"f",branch:"buryt"},
+        {id:"murat_b",name:"Мұрат",g:"m",branch:"buryt",spouse:"Гүлғайсара Кәмелханқызы",spouseInfo:"Жүзі: Жастабан",
+        children:[
+          {id:"aidyngyul_b",name:"Айдынгүл",g:"f",branch:"buryt"},
+          {id:"shalkar_b",name:"Шалқар",g:"m",branch:"buryt"},
+          {id:"riza_b",name:"Риза",g:"m",branch:"buryt"}
+        ]},
+        {id:"irada_b",name:"Ирада",g:"f",branch:"buryt"},
+        {id:"ardak_b",name:"Ардақ",g:"f",branch:"buryt"},
+        {id:"tilek_b",name:"Тілек",g:"m",branch:"buryt",spouse:"Мағрипа Айтанқызы",spouseInfo:"Жүзі: Қаракерей",
+        children:[
+          {id:"akberen_b",name:"Ақберен",g:"m",branch:"buryt"},
+          {id:"aksunkar_b",name:"Ақсұңқар",g:"m",branch:"buryt"}
+        ]},
+        {id:"shugla_b",name:"Шұғла",g:"f",branch:"buryt"},
+        {id:"samura_b",name:"Самура",g:"f",branch:"buryt"}
+      ]},
+      {id:"akhymetbay_b",name:"Ахыметбай",g:"m",branch:"buryt"},
+      {id:"zayymkhan_b",name:"Зәйымхан",g:"f",branch:"buryt"}
+    ]},
+    {id:"symak_b",name:"Сымақ",g:"m",branch:"buryt"},
+    {id:"yskak_b",name:"Ысқақ",g:"m",branch:"buryt"},
+    {id:"tolegen_b",name:"Төлеген",g:"m",branch:"buryt"},
+    {id:"makash_b",name:"Мақаш",g:"m",branch:"buryt",spouse:"Нұрбала Мұқай / Гімиңгүл",
+    children:[
+      {id:"gyulmira_b",name:"Гүлмира",g:"f",branch:"buryt"},
+      {id:"zhazira_b",name:"Жәзира",g:"f",branch:"buryt"},
+      {id:"eskhat_b",name:"Есхат",g:"m",branch:"buryt"},
+      {id:"kalima_b",name:"Қалима",g:"f",branch:"buryt"},
+      {id:"aktilek_b",name:"Ақтілек",g:"m",branch:"buryt"}
+    ]},
+    {id:"yryskhan_b",name:"Ырысхан",g:"m",branch:"buryt"},
+    {id:"yrymkhan_b",name:"Ырымхан",g:"f",branch:"buryt"},
+    {id:"eleukhan_b",name:"Елеухан",g:"m",branch:"buryt"}
+  ]},
+  {id:"abiti_b",name:"Әбіті",g:"m",branch:"buryt"},
+  {id:"abdi_b",name:"Әбді",g:"m",branch:"buryt",spouse:"Ырымжан",spouseInfo:"Жүзі: Көнсадақ",
+  children:[
+    {id:"rakhadil_b",name:"Рахаділ",g:"m",branch:"buryt",spouse:"Ғалия Жылыспайқызы",spouseInfo:"Жүзі: Уақ",
+    children:[
+      {id:"eshmukhammet_b",name:"Ешмұхаммед",g:"m",branch:"buryt",spouse:"Кәмелхан Ахметқызы",spouseInfo:"Жүзі: Шұбарайғыр",
+      children:[
+        {id:"moldabay_b",name:"Молдабай",g:"m",branch:"buryt",spouse:"Нұршай Қаламханқызы",spouseInfo:"Жүзі: Сарбас",
+        children:[{id:"eren_b",name:"Ерен",g:"m",branch:"buryt"}]},
+        {id:"tileukhan_b",name:"Тілеухан",g:"m",branch:"buryt",spouse:"Үзімхан Рахымжанқызы",spouseInfo:"Жүзі: Жәнтекей",
+        children:[{id:"aisymbat_b",name:"Айсымбат",g:"f",branch:"buryt"}]},
+        {id:"nurlankhan_b",name:"Нұрланхан",g:"f",branch:"buryt"},
+        {id:"patiha_b",name:"Пәтіха",g:"f",branch:"buryt"},
+        {id:"nurlan_b",name:"Нұрлан",g:"m",branch:"buryt",spouse:"Майнұр Тоқтарбекқызы",spouseInfo:"Жүзі: Жәнтекей",
+        children:[{id:"erlan_b",name:"Ерлан",g:"m",branch:"buryt"}]},
+        {id:"nurkhan_b",name:"Нұрхан",g:"m",branch:"buryt"}
+      ]},
+      {id:"zharmukhammet_b",name:"Жармұхаммед",g:"m",branch:"buryt",spouse:"Гүланда Қанапия",spouseInfo:"Жүзі: Уақ",
+      children:[
+        {id:"mukiat_b",name:"Мұқият",g:"m",branch:"buryt",spouse:"Гімиңгүл Заданқызы",spouseInfo:"Жүзі: Қаратай",
+        children:[
+          {id:"aizhan_b",name:"Айжан",g:"f",branch:"buryt"},
+          {id:"tansaule_b",name:"Таңсәуле",g:"f",branch:"buryt"},
+          {id:"arman_b",name:"Арман",g:"m",branch:"buryt"}
+        ]},
+        {id:"yntymak_b",name:"Ынтымақ",g:"f",branch:"buryt"},
+        {id:"sharihan_b",name:"Шәрихан",g:"f",branch:"buryt"},
+        {id:"azi_b",name:"Әзи",g:"f",branch:"buryt"},
+        {id:"ardak_b2",name:"Ардақ",g:"f",branch:"buryt"},
+        {id:"parzan_b",name:"Пәрзан",g:"m",branch:"buryt"}
+      ]},
+      {id:"kurman_b",name:"Құрман",g:"m",branch:"buryt",spouse:"Қадиша Аусай",spouseInfo:"Жүзі: Уақ",
+      children:[
+        {id:"tileubek_b",name:"Тілеубек",g:"m",branch:"buryt",spouse:"Айнұр Айыпханқызы",spouseInfo:"Жүзі: Жайлау",
+        children:[{id:"saltanat_b",name:"Салтанат",g:"f",branch:"buryt"}]},
+        {id:"atipa_b",name:"Әтіпа",g:"f",branch:"buryt"},
+        {id:"gylden_b",name:"Гүлден",g:"f",branch:"buryt"},
+        {id:"kayrat_b",name:"Қайрат",g:"m",branch:"buryt"}
+      ]},
+      {id:"kali_b",name:"Қали",g:"m",branch:"buryt",spouse:"Қадиша Байкерейқызы",spouseInfo:"Жүзі: Шотай",
+      children:[
+        {id:"anipa_b",name:"Әнипа",g:"f",branch:"buryt"},
+        {id:"yzymgyul_b",name:"Үзімгүл",g:"f",branch:"buryt"},
+        {id:"naghyzbek_b",name:"Нағызбек",g:"m",branch:"buryt",spouse:"Бақытбала Рүстемқызы",spouseInfo:"Жүзі: Уақ",
+        children:[{id:"adenbek_b",name:"Әденбек",g:"m",branch:"buryt"}]},
+        {id:"serik_b",name:"Серік",g:"m",branch:"buryt"}
+      ]},
+      {id:"orazbek_b",name:"Оразбек",g:"m",branch:"buryt",spouse:"Әзі Әбілмажанқызы",spouseInfo:"Жүзі: Шұбарайғыр",
+      children:[
+        {id:"altynbek_b",name:"Алтынбек",g:"m",branch:"buryt"},
+        {id:"altyngyul_b",name:"Алтынгүл",g:"f",branch:"buryt"}
+      ]},
+      {id:"gylgaysha_b",name:"Гүлғайша",g:"f",branch:"buryt"}
+    ]},
+    {id:"makym_b",name:"Мақым",g:"m",branch:"buryt",spouse:"Шәкей Шәйкенқызы",spouseInfo:"Жүзі: Есдәулет",
+    children:[
+      {id:"moldakhmet_b",name:"Молдахмет",g:"m",branch:"buryt",spouse:"Нүржікен Заданқызы",spouseInfo:"Жүзі: Шимойын",
+      children:[
+        {id:"berdymurat_b",name:"Бердімұрат",g:"m",branch:"buryt",spouse:"Бекзат Дүйсенқызы",spouseInfo:"Жүзі: Найман",
+        children:[
+          {id:"dosbol_b",name:"Досбол",g:"m",branch:"buryt"},
+          {id:"tanzharyk_b",name:"Таңжарық",g:"f",branch:"buryt"},
+          {id:"tabys_b",name:"Табыс",g:"m",branch:"buryt"}
+        ]},
+        {id:"bakdaulet_b",name:"Бақдәулет",g:"m",branch:"buryt",spouse:"Мақпал Баймашқызы",spouseInfo:"Жүзі: Жалайыр",
+        children:[
+          {id:"tansamal_b",name:"Таңсамал",g:"f",branch:"buryt"},
+          {id:"fatima_b",name:"Фатима",g:"f",branch:"buryt"}
+        ]},
+        {id:"kaliman_b",name:"Кәлиман",g:"f",branch:"buryt"},
+        {id:"katiman_b",name:"Кәтиман",g:"f",branch:"buryt"}
+      ]},
+      {id:"adal_b",name:"Адал",g:"m",branch:"buryt",spouse:"Бейісхан Сағатбекқызы",spouseInfo:"Жүзі: Уақ",
+      children:[
+        {id:"nurbolat_b",name:"Нұрболат",g:"m",branch:"buryt"},
+        {id:"almira_b",name:"Әлмира",g:"f",branch:"buryt"}
+      ]},
+      {id:"gylbagi_b",name:"Гүлбағи",g:"f",branch:"buryt"},
+      {id:"bagila_b",name:"Бағила",g:"f",branch:"buryt"},
+      {id:"sakpan_b",name:"Сақпан",g:"m",branch:"buryt"},
+      {id:"dauken_b",name:"Дәукен",g:"m",branch:"buryt"}
+    ]},
+    {id:"nurakhmet_b",name:"Нұрахмет",g:"m",branch:"buryt",
+    children:[
+      {id:"beisen_b",name:"Бейсен",g:"m",branch:"buryt",spouse:"Сәмия Рамазанқызы",spouseInfo:"Жүзі: Елгелді",
+      children:[
+        {id:"zhanibek_b",name:"Жәнібек",g:"m",branch:"buryt",spouse:"Аман Жақияқызы",spouseInfo:"Жүзі: Шұбарайғыр",
+        children:[{id:"dauren_b",name:"Дәурен",g:"m",branch:"buryt"}]},
+        {id:"zhanarbek_b",name:"Жанарбек",g:"m",branch:"buryt"},
+        {id:"arkar_b",name:"Арқарбек",g:"m",branch:"buryt"},
+        {id:"anar_b",name:"Анар",g:"f",branch:"buryt"}
+      ]},
+      {id:"seisen_b",name:"Сейсен",g:"m",branch:"buryt",spouse:"Күкаш Ботақара",
+      children:[
+        {id:"serik2_b",name:"Серік",g:"m",branch:"buryt"},
+        {id:"gylsin_b",name:"Гүлсін",g:"f",branch:"buryt"}
+      ]},
+      {id:"sarsen_b",name:"Сәрсен",g:"m",branch:"buryt",spouse:"Қамия Рамазанқызы",spouseInfo:"Жүзі: Елгелді",
+      children:[
+        {id:"saulet_b",name:"Сәулет",g:"m",branch:"buryt"},
+        {id:"roza_b",name:"Роза",g:"f",branch:"buryt"}
+      ]},
+      {id:"mukhtar_b",name:"Мұхтар",g:"m",branch:"buryt"},
+      {id:"kayrat2_b",name:"Қайрат",g:"m",branch:"buryt",spouse:"Нұргүл Еренғазықызы",spouseInfo:"Жүзі: Уақ",
+      children:[
+        {id:"ainash_b",name:"Айнаш",g:"f",branch:"buryt"},
+        {id:"aidan_b",name:"Айдан",g:"f",branch:"buryt"}
+      ]},
+      {id:"giming_b",name:"Гімиң",g:"m",branch:"buryt",spouse:"Өкен Жанымханқызы",
+      children:[{id:"akerke_b",name:"Ақерке",g:"f",branch:"buryt"}]},
+      {id:"meyran_b",name:"Мейран",g:"m",branch:"buryt",spouse:"Мәрия Қали",spouseInfo:"Жүзі: Тәттібай"},
+      {id:"kylan_b",name:"Күлән",g:"f",branch:"buryt"},
+      {id:"gylbaran_b",name:"Гүлбаран",g:"f",branch:"buryt"},
+      {id:"gylzira_b",name:"Гүлзира",g:"f",branch:"buryt"},
+      {id:"gylzipa_b",name:"Гүлзипа",g:"f",branch:"buryt"}
+    ]},
+    {id:"kozha_b",name:"Қожа",g:"m",branch:"buryt",spouse:"Пакза Қаһарманқызы",
+    children:[
+      {id:"meyrak_b",name:"Мейрақ",g:"m",branch:"buryt",spouse:"Дәкеш Мұқаметжанқызы",spouseInfo:"Жүзі: Найман",
+      children:[
+        {id:"erbol_b",name:"Ербол",g:"m",branch:"buryt",spouse:"Үнзила Әсемханқызы",spouseInfo:"Жүзі: Жастабан",
+        children:[
+          {id:"nurasyl_b",name:"Нұрасыл",g:"m",branch:"buryt"},
+          {id:"rayan_b",name:"Раян",g:"m",branch:"buryt"}
+        ]},
+        {id:"anar2_b",name:"Анар",g:"f",branch:"buryt"}
+      ]},
+      {id:"aset_b",name:"Әсет",g:"m",branch:"buryt",spouse:"Бәти Шайсұлтанқызы",spouseInfo:"Жүзі: Есдәулет",
+      children:[
+        {id:"zhandarbek_b",name:"Жандарбек",g:"m",branch:"buryt"},
+        {id:"parasat_b",name:"Парасат",g:"f",branch:"buryt"},
+        {id:"shapagat_b",name:"Шапағат",g:"f",branch:"buryt"}
+      ]},
+      {id:"bakyt2_b",name:"Бақыт",g:"m",branch:"buryt"}
+    ]},
+    {id:"kozhatay_b",name:"Қожатай",g:"m",branch:"buryt"},
+    {id:"nurgaysha_b",name:"Нұрғайша",g:"f",branch:"buryt"}
+  ]}
+]},
+
+{id:"toktagan",name:"Тоқтаған",g:"m",branch:"toktagan",
+children:[{id:"abey_t",name:"Әбей",g:"m",branch:"toktagan",
+children:[
+  {id:"zhapay_t",name:"Жапай",g:"m",branch:"toktagan",spouse:"Қақаш Баймоллақызы",spouseInfo:"Жүзі: Мұрын",
+  children:[
+    {id:"kunapiya_t",name:"Құнапия",g:"m",branch:"toktagan",spouse:"Ғалия Төлеуқызы",spouseInfo:"Жүзі: Найман",
+    children:[
+      {id:"beylkhan_t",name:"Бейілхан",g:"m",branch:"toktagan",spouse:"Жайна Аралханқызы",spouseInfo:"Жүзі: Шеруші",
+      children:[{id:"samgat_t",name:"Самғат",g:"m",branch:"toktagan"}]},
+      {id:"patiha_t",name:"Пәтиха",g:"f",branch:"toktagan"},
+      {id:"kanipa_t",name:"Қанипа",g:"f",branch:"toktagan"},
+      {id:"saragyul_t",name:"Сарагүл",g:"f",branch:"toktagan"},
+      {id:"zoragyul_t",name:"Зорагүл",g:"f",branch:"toktagan"},
+      {id:"meyramkhan_t",name:"Мейрамхан",g:"m",branch:"toktagan"}
+    ]},
+    {id:"batima_t",name:"Бәтима",g:"f",branch:"toktagan"}
+  ]},
+  {id:"mukhametzazy_t",name:"Мұхаметқазы",g:"m",branch:"toktagan",spouse:"Нұржәміш Мұсақызы",spouseInfo:"Жүзі: Ботақара",
+  children:[
+    {id:"muratbek_t",name:"Мұратбек",g:"m",branch:"toktagan",spouse:"Фарида Данайқызы",spouseInfo:"Жүзі: Қаракерей"},
+    {id:"meirkhan_t",name:"Мейірхан",g:"m",branch:"toktagan",spouse:"Әсигүл Көксегенқызы",spouseInfo:"Жүзі: Ботақара",
+    children:[{id:"gulnur_t",name:"Гүлнұр",g:"f",branch:"toktagan"}]},
+    {id:"mereykhan_t",name:"Мерейхан",g:"m",branch:"toktagan",spouse:"Жанар",
+    children:[{id:"orlen_t",name:"Өрлен",g:"m",branch:"toktagan"}]},
+    {id:"toleukhan_t",name:"Төлеухан",g:"m",branch:"toktagan",spouse:"Гүлнар",
+    children:[
+      {id:"moldir_t",name:"Мөлдір",g:"f",branch:"toktagan"},
+      {id:"sunkar_t",name:"Сұңқар",g:"m",branch:"toktagan"}
+    ]},
+    {id:"aigyul_t",name:"Айгүл",g:"f",branch:"toktagan"}
+  ]},
+  {id:"bekbay_t",name:"Бекбай",g:"m",branch:"toktagan"}
+]}]}
+
+]}]}]}]}]};
+
+// ══════════════════════════════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════════════════════════════
+const branchC     = {zhaman:'#C88030', saki:'#4A8890', buryt:'#6A9848', toktagan:'#A84840', main:'#706858'};
+const branchFillM = {zhaman:'rgba(200,128,48,.3)', saki:'rgba(74,136,144,.3)', buryt:'rgba(106,152,72,.3)', toktagan:'rgba(168,72,64,.3)', main:'rgba(112,104,88,.22)'};
+const branchNames = {zhaman:'Жаман тармағы', saki:'Сәкі тармағы', buryt:'Бүріт тармағы', toktagan:'Тоқтаған тармағы'};
+function getBranch(d){ let n=d; while(n){ if(n.data.branch) return n.data.branch; n=n.parent; } return 'main'; }
+
+// ══════════════════════════════════════════════════════
+//  SVG SETUP
+// ══════════════════════════════════════════════════════
+const isMobile = () => window.innerWidth <= 700;
+const svg = d3.select('#tree-svg');
+let W = window.innerWidth;
+let H = window.innerHeight - 60;
+svg.attr('viewBox',`0 0 ${W} ${H}`);
+
+const g = svg.append('g');
+const zoom = d3.zoom().scaleExtent([0.04, 6]).on('zoom', e => g.attr('transform', e.transform));
+svg.call(zoom);
+
+const tree = d3.tree().nodeSize([38, 185]).separation((a,b) => a.parent===b.parent ? 1.1 : 2.2);
+const root = d3.hierarchy(DATA);
+root.x0 = H/2; root.y0 = 0;
+
+// Collapse nodes beyond depth 5 by default (shows all 4 branches + their first level)
+root.descendants().forEach(d => {
+  if(d.depth >= 6 && d.children){ d._children = d.children; d.children = null; }
+});
+
+let uid = 0;
+function getUID(d){ if(!d._uid) d._uid = 'n'+(uid++); return d._uid; }
+
+// ══════════════════════════════════════════════════════
+//  INITIAL ZOOM — smarter for mobile
+// ══════════════════════════════════════════════════════
+function getInitialTransform(){
+  if(isMobile()){
+    return d3.zoomIdentity.translate(50, H/2).scale(0.55);
+  }
+  return d3.zoomIdentity.translate(120, H/2).scale(0.72);
+}
+let initialT = getInitialTransform();
+
+// ══════════════════════════════════════════════════════
+//  SPOUSE LAYER
+// ══════════════════════════════════════════════════════
+const swLayer = g.append('g').attr('class','spouse-layer');
+
+function updateSpouses(nodes){
+  const withSpouse = nodes.filter(d => d.data.spouse);
+  const sw = swLayer.selectAll('.spouse-wrap').data(withSpouse, d => d.data.id+'_w');
+  const swE = sw.enter().append('g').attr('class','spouse-wrap')
+    .attr('transform', d => `translate(${d.y0||0},${d.x0||0})`)
+    .style('opacity',0).style('cursor','pointer')
+    .on('click',(ev,d) => ev.stopPropagation())
+    .on('mouseenter',(ev,d) => showTooltip(ev, d.data.spouse+(d.data.spouseInfo?'\n'+d.data.spouseInfo:'')))
+    .on('mouseleave', hideTooltip);
+  swE.append('text').attr('class','spouse-label');
+  const swAll = swE.merge(sw);
+  swAll.select('text.spouse-label')
+    .attr('x', d => (d.children||d._children)?-10:10).attr('y',0).attr('dy','1.6em')
+    .attr('text-anchor', d => (d.children||d._children)?'end':'start')
+    .text(d => '♦ '+d.data.spouse);
+  swAll.transition().duration(400).ease(d3.easeCubicOut)
+    .attr('transform', d => `translate(${d.y},${d.x})`).style('opacity',1);
+  sw.exit().transition().duration(300).style('opacity',0).remove();
+  swLayer.raise();
+}
+
+// ══════════════════════════════════════════════════════
+//  MAIN UPDATE
+// ══════════════════════════════════════════════════════
+function update(src){
+  tree(root);
+  const nodes = root.descendants();
+  const links = root.links();
+
+  const link = g.selectAll('.link').data(links, d => getUID(d.target));
+  link.enter().insert('path','.node')
+    .attr('class', d => 'link link-'+(getBranch(d.target)||'main'))
+    .attr('d', () => d3.linkHorizontal().x(()=>src.y0||0).y(()=>src.x0||0)({source:{},target:{}}))
+    .merge(link).transition().duration(400).ease(d3.easeCubicOut)
+    .attr('class', d => 'link link-'+(getBranch(d.target)||'main'))
+    .attr('d', d3.linkHorizontal().x(d=>d.y).y(d=>d.x));
+  link.exit().transition().duration(300)
+    .attr('d', ()=>d3.linkHorizontal().x(()=>src.y).y(()=>src.x)({source:{},target:{}})).remove();
+
+  const node = g.selectAll('.node').data(nodes, d => getUID(d));
+  const nE = node.enter().append('g')
+    .attr('class', d => 'node '+(d.data.g==='f'?'f':'m'))
+    .attr('transform', d =>`translate(${src.y||0},${src.x||0})`)
+    .style('opacity', 1);
+
+  // Larger invisible hit area for touch
+  nE.append('rect').attr('class','hit-area')
+    .attr('x',-18).attr('y',-18).attr('width',36).attr('height',36)
+    .attr('fill','transparent').attr('stroke','none');
+  nE.append('rect').attr('class','node-shape')
+    .attr('x',-6).attr('y',-6).attr('width',12).attr('height',12).attr('rx',2)
+    .attr('transform', d => d.data.g==='f'?'rotate(45)':'');
+  nE.append('text').attr('class','expand').attr('dy','0.31em').attr('text-anchor','middle');
+  nE.append('text')
+    .attr('dy','0.31em')
+    .attr('x', d => (d._children||d.children)?-12:12)
+    .attr('text-anchor', d => (d._children||d.children)?'end':'start')
+    .text(d => d.data.name)
+    .style('font-size', d => d.depth<=4?'12px':'10px')
+    .style('font-weight', d => d.depth<=3?'600':'400');
+
+  nE.on('click', (ev,d) => ev.stopPropagation())
+    .on('dblclick', (ev,d) => {
+      ev.stopPropagation();
+      toggleNode(d);
+    })
+    .on('mouseenter', (ev,d) => {
+      if(isMobile()) return;
+      const ch = (d.children||[]).length+(d._children||[]).length;
+      if(ch>0) showTooltip(ev, d.data.name+'\n'+ch+' бала · Екі рет басу');
+    })
+    .on('mouseleave', hideTooltip);
+
+  const nAll = nE.merge(node);
+  nAll.transition().duration(300).ease(d3.easeCubicOut)
+    .attr('transform', d=>`translate(${d.y},${d.x})`)
+    .style('opacity', 1);
+
+  nAll.select('.node-shape').transition().duration(400)
+    .attr('fill', d => d.data.g==='f'?'rgba(192,104,56,.25)':branchFillM[getBranch(d)])
+    .attr('stroke', d => d.data.g==='f'?'#C06838':branchC[getBranch(d)])
+    .attr('stroke-dasharray', d => d._children?'3,2':'none');
+
+  nAll.select('.expand').text(d => d._children?'▸':'');
+  nAll.select('text:not(.expand)')
+    .attr('x', d=>(d._children||d.children)?-12:12)
+    .attr('text-anchor', d=>(d._children||d.children)?'end':'start');
+
+  node.exit().transition().duration(300)
+    .attr('transform',()=>`translate(${src.y},${src.x})`).style('opacity',0).remove();
+  nodes.forEach(d=>{ d.x0=d.x; d.y0=d.y; });
+  updateSpouses(nodes);
+}
+
+function toggleNode(d){
+  if(d.children){ d._children=d.children; d.children=null; }
+  else if(d._children){ d.children=d._children; d._children=null; }
+  update(d);
+}
+
+update(root);
+// Apply initial zoom immediately (no transition)
+fitAllInstant();
+
+// ══════════════════════════════════════════════════════
+//  ZOOM HELPERS
+// ══════════════════════════════════════════════════════
+function doZoom(f){ svg.transition().duration(300).call(zoom.scaleBy, f); }
+function fitAllInstant(){
+  tree(root);
+  const nl = root.descendants();
+  const xs=nl.map(d=>d.y), ys=nl.map(d=>d.x);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const pad=60;
+  const cW = window.innerWidth;
+  const cH = window.innerHeight - 60;
+  const s=Math.min((cW-pad*2)/(x1-x0||1),(cH-pad*2)/(y1-y0||1), 1.5);
+  const tx = pad - x0*s;
+  const ty = cH/2 - (y0+y1)/2*s;
+  svg.call(zoom.transform, d3.zoomIdentity.translate(tx,ty).scale(s));
+}
+function fitAll(){
+  tree(root);
+  const nl = root.descendants();
+  const xs=nl.map(d=>d.y), ys=nl.map(d=>d.x);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const pad=60;
+  const cW = window.innerWidth;
+  const cH = window.innerHeight - 60;
+  const s=Math.min((cW-pad*2)/(x1-x0||1),(cH-pad*2)/(y1-y0||1), 1.5);
+  const tx = pad - x0*s;
+  const ty = cH/2 - (y0+y1)/2*s;
+  svg.transition().duration(600).ease(d3.easeCubicOut)
+    .call(zoom.transform, d3.zoomIdentity.translate(tx,ty).scale(s));
+}
+function goHome(){ svg.transition().duration(500).call(zoom.transform, initialT); }
+
+// Desktop zoom buttons
+document.getElementById('zc-in').addEventListener('click',  ()=>doZoom(1.35));
+document.getElementById('zc-out').addEventListener('click', ()=>doZoom(1/1.35));
+document.getElementById('zc-fit').addEventListener('click',  fitAll);
+document.getElementById('zc-home').addEventListener('click', goHome);
+
+// Mobile zoom buttons
+document.getElementById('mzc-in').addEventListener('click',  ()=>doZoom(1.4));
+document.getElementById('mzc-out').addEventListener('click', ()=>doZoom(1/1.4));
+document.getElementById('mzc-fit').addEventListener('click',  fitAll);
+document.getElementById('mzc-home').addEventListener('click', goHome);
+
+// ══════════════════════════════════════════════════════
+//  BRANCH FILTER
+// ══════════════════════════════════════════════════════
+let activeBranch = 'all';
+function applyBranchFilter(branch){
+  activeBranch = branch;
+  // Update all filter buttons (desktop + mobile)
+  document.querySelectorAll('.bf-btn, .mbb').forEach(b => {
+    const isActive = b.dataset.branch === branch;
+    b.classList.toggle('active', isActive);
+    if(b.classList.contains('bf-btn')){
+      b.style.background = isActive && branch==='all' ? 'rgba(200,152,40,.1)' : '';
+      b.style.borderColor = isActive && branch==='all' ? '#4A4030' : '';
+    }
+  });
+  if(branch==='all'){
+    g.selectAll('.node').classed('search-dim',false);
+    g.selectAll('.link').style('opacity',.5);
+  } else {
+    g.selectAll('.node').classed('search-dim', d=>getBranch(d)!==branch);
+    g.selectAll('.link').style('opacity', d=>getBranch(d.target)===branch?.7:.08);
+  }
+}
+document.querySelectorAll('.bf-btn, .mbb').forEach(btn =>
+  btn.addEventListener('click', ()=>applyBranchFilter(btn.dataset.branch))
+);
+
+// ══════════════════════════════════════════════════════
+//  TOOLTIP
+// ══════════════════════════════════════════════════════
+const tooltip = document.getElementById('tooltip');
+function showTooltip(ev,text){
+  tooltip.style.opacity='1';
+  tooltip.innerHTML=text.split('\n').join('<br>');
+  tooltip.style.left=(ev.clientX+14)+'px';
+  tooltip.style.top=(ev.clientY-10)+'px';
+}
+function hideTooltip(){ tooltip.style.opacity='0'; }
+
+// ══════════════════════════════════════════════════════
+//  DOUBLE-TAP (mobile expand/collapse)
+// ══════════════════════════════════════════════════════
+let lastTap=0, lastEl=null;
+svg.on('touchend.dtap', function(ev){
+  const now=Date.now();
+  const el=ev.target;
+  if(now-lastTap<300 && lastEl===el){
+    ev.preventDefault();
+    const t=ev.changedTouches[0];
+    const nodeEl=document.elementFromPoint(t.clientX,t.clientY)?.closest('g.node');
+    if(nodeEl){ const d=d3.select(nodeEl).datum(); if(d) toggleNode(d); }
+  }
+  lastTap=now; lastEl=el;
+});
+
+// ══════════════════════════════════════════════════════
+//  KEYBOARD
+// ══════════════════════════════════════════════════════
+document.addEventListener('keydown', e=>{
+  if(e.key==='+'||e.key==='=') doZoom(1.35);
+  if(e.key==='-') doZoom(1/1.35);
+  if(e.key==='f'||e.key==='F') fitAll();
+  if(e.key==='h'||e.key==='H') goHome();
+});
+
+// ══════════════════════════════════════════════════════
+//  RESIZE
+// ══════════════════════════════════════════════════════
+window.addEventListener('resize', ()=>{
+  W=window.innerWidth;
+  H=document.getElementById('tree-wrap').clientHeight||window.innerHeight-60;
+  svg.attr('viewBox',`0 0 ${W} ${H}`);
+  initialT=getInitialTransform();
+});
+</script>
+</body>
+</html>
