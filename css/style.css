@@ -96,7 +96,6 @@ header{
   -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent 100%);
   mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent 100%)}
 .mob-branch-row::-webkit-scrollbar{display:none}
-.mob-fit-controls{display:none}
 .mbb{flex-shrink:0;height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--border2);background:#1A1208;color:var(--text-dim);font-family:'EB Garamond',serif;font-size:13px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;transition:border-color .15s,color .15s}
 .mbb.active{border-color:var(--gold);color:var(--gold)}
 .mbb[data-branch="zhaman"].active{border-color:#C88030;color:#C88030}
@@ -113,8 +112,6 @@ header{
   .legend{display:none}
   .layout{height:calc(100vh - 60px);height:calc(100svh - 60px)}
   .bottom-bar{display:block}
-  .mob-fit-controls{display:flex;flex-direction:column;gap:4px;position:fixed;
-    right:14px;bottom:calc(78px + env(safe-area-inset-bottom, 0px));z-index:15}
   #tree-svg{cursor:default;touch-action:none}
 
   /* Info panel becomes a bottom sheet on mobile instead of a full-height side
@@ -132,5 +129,5 @@ header{
   .panel.open{transform:translateY(0);box-shadow:0 -8px 24px rgba(0,0,0,.5)}
   .panel::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);
     width:36px;height:4px;border-radius:2px;background:var(--border2)}
-  body.panel-open .bottom-bar,body.panel-open .mob-fit-controls{display:none}
+  body.panel-open .bottom-bar{display:none}
 }

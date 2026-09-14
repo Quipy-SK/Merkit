@@ -51,8 +51,6 @@ document.getElementById('zc-in').addEventListener('click',  ()=>doZoom(1.35));
 document.getElementById('zc-out').addEventListener('click', ()=>doZoom(1/1.35));
 document.getElementById('zc-fit').addEventListener('click',  fitAll);
 document.getElementById('zc-home').addEventListener('click', goHome);
-document.getElementById('mzc-fit').addEventListener('click',  fitAll);
-document.getElementById('mzc-home').addEventListener('click', goHome);
 
 // ── KEYBOARD ──
 document.addEventListener('keydown', e=>{
