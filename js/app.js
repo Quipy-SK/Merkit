@@ -303,6 +303,7 @@ function showPanel(d){
   document.getElementById('pgen').textContent = gen+'-ші буын / '+gen+'-е поколение';
 
   document.getElementById('panel').classList.add('open');
+  document.body.classList.add('panel-open');
   g.selectAll('.node').classed('hl',nd=>nd.data.id===p.id);
 }
 
@@ -318,11 +319,13 @@ function showSpousePanel(node, spouse){
   const gen = node.depth+1;
   document.getElementById('pgen').textContent = gen+'-ші буын';
   document.getElementById('panel').classList.add('open');
+  document.body.classList.add('panel-open');
   g.selectAll('.node').classed('hl',false);
 }
 
 function closePanel(){
   document.getElementById('panel').classList.remove('open');
+  document.body.classList.remove('panel-open');
   g.selectAll('.node').classed('hl',false);
 }
 window.closePanel=closePanel;
