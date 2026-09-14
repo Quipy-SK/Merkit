@@ -35,7 +35,7 @@ function computeFitTransform(){
   const ys = nl.map(d=>d.x);
   const x0=Math.min(...xs), x1=Math.max(...xsEnd);
   const y0=Math.min(...ys), y1=Math.max(...ys);
-  const pad=60, cW=window.innerWidth, cH=window.innerHeight-(window.innerWidth<=700?52:60);
+  const pad=60, cW=window.innerWidth, cH=window.innerHeight-60;
   // A wide multi-generation tree on a narrow phone would be forced to an illegible scale
   // if width had to fit too. Floor the scale and let excess width pan off-screen instead.
   const rawScale = Math.min((cW-pad*2)/(x1-x0||1),(cH-pad*2)/(y1-y0||1));
@@ -51,8 +51,6 @@ document.getElementById('zc-in').addEventListener('click',  ()=>doZoom(1.35));
 document.getElementById('zc-out').addEventListener('click', ()=>doZoom(1/1.35));
 document.getElementById('zc-fit').addEventListener('click',  fitAll);
 document.getElementById('zc-home').addEventListener('click', goHome);
-document.getElementById('mzc-in').addEventListener('click',  ()=>doZoom(1.4));
-document.getElementById('mzc-out').addEventListener('click', ()=>doZoom(1/1.4));
 document.getElementById('mzc-fit').addEventListener('click',  fitAll);
 document.getElementById('mzc-home').addEventListener('click', goHome);
 
@@ -69,7 +67,7 @@ document.addEventListener('keydown', e=>{
 // ════════════════════════════════════════════════════════
 const svg = d3.select('#tree-svg');
 const W = window.innerWidth;
-const H = window.innerHeight - (window.innerWidth <= 700 ? 52 : 60);
+const H = window.innerHeight - 60;
 svg.attr('viewBox',`0 0 ${W} ${H}`).attr('width',W).attr('height',H);
 
 const g = svg.append('g');
@@ -211,23 +209,30 @@ function update(src){
   nE.append('rect').attr('class','node-shape')
     .attr('x',0).attr('y',-CARD_H/2).attr('height',CARD_H).attr('rx',CARD_H/2)
     .attr('width',d=>d._cardW);
-  nE.append('text').attr('class','expand').attr('dy','0.32em').attr('text-anchor','start');
   nE.append('text').attr('class','node-label')
     .attr('dy','0.32em').attr('x',16).attr('text-anchor','start')
     .text(d=>d._label)
     .style('font-size',d=>d.depth<=4?'13px':'12px')
     .style('font-weight',d=>d.depth<=4?'600':'400');
 
+  // Expand/collapse gets its own hit target, separate from the card — on a phone this
+  // used to be the card's whole tap action, which meant tapping a person's name never
+  // opened their info (the one thing you'd actually want to check). Now the card always
+  // opens the panel; this little button next to it is the only thing that expands/collapses.
+  const expandToggle = nE.append('g').attr('class','expand-toggle')
+    .on('click',(ev,d)=>{
+      ev.stopPropagation();
+      if(d.children){ d._children=d.children; d.children=null; }
+      else if(d._children){ d.children=d._children; d._children=null; }
+      update(d);
+    });
+  expandToggle.append('circle').attr('class','expand-hit').attr('r',15);
+  expandToggle.append('text').attr('class','expand').attr('dy','0.32em').attr('text-anchor','middle');
+
   nE.on('click',(ev,d)=>{
       ev.stopPropagation();
       g.selectAll('.node').classed('hl',nd=>nd.data.id===d.data.id);
-      if(window.innerWidth<=700){
-        if(d.children){ d._children=d.children; d.children=null; }
-        else if(d._children){ d.children=d._children; d._children=null; }
-        update(d);
-      } else {
-        showPanel(d);
-      }
+      showPanel(d);
     })
     .on('dblclick',(ev,d)=>{
       ev.stopPropagation();
@@ -248,9 +253,10 @@ function update(src){
 
   nAll.select('.node-label').text(d=>d._label);
 
-  nAll.select('.expand')
-    .attr('x', d=>d._cardW+6)
-    .text(d=>d._children?'▸':'');
+  nAll.select('.expand-toggle')
+    .attr('transform', d=>`translate(${d._cardW+19},0)`)
+    .style('display', d=>(d.children||d._children)?null:'none');
+  nAll.select('.expand').text(d=>d._children?'▸':'▾');
 
   node.exit().transition().duration(360)
     .attr('transform',()=>`translate(${src.y},${src.x})`)
@@ -323,6 +329,6 @@ window.closePanel=closePanel;
 
 // Resize
 window.addEventListener('resize',()=>{
-  const nW=window.innerWidth, nH=window.innerHeight-(window.innerWidth<=700?52:60);
+  const nW=window.innerWidth, nH=window.innerHeight-60;
   svg.attr('viewBox',`0 0 ${nW} ${nH}`).attr('width',nW).attr('height',nH);
 });
